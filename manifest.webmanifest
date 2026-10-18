@@ -1,7 +1,7 @@
 {
-  "name": "Riley Speed Unlocker",
-  "short_name": "Riley Unlocker",
-  "description": "Riley Speed Unlocker for Volpam MK-083 e-scooters. 2-button 47/20 km/h limiter switch and live dashboard.",
+  "name": "Riley App",
+  "short_name": "Riley App",
+  "description": "Riley Speed Unlocker for Volpam MK-083 e-scooters. 2-button limiter switch and live dashboard.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
