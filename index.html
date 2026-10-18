@@ -280,7 +280,7 @@ input:checked+.slider{background:linear-gradient(135deg,#f87171,#dc2626);box-sha
           <span class="badge-mini" style="background: rgba(245, 158, 11, 0.25); color: #fbbf24;">Active Trigger</span>
         </div>
         <div style="font-size: 11px; color: var(--text-dim); line-height: 1.4; margin-bottom: 8px;">
-          Switch to <strong>ECO mode</strong> and hold <strong>Full Throttle for 5 seconds</strong>:
+          Switch to <strong>ECO mode</strong> and hold <strong>Full Throttle for 2 seconds</strong>:
           <br>• Automatically reverts Sport limit from <strong>47 ➔ 20 km/h</strong>!
           <br>• Automatically shifts scooter back from <strong>ECO ➔ SPORT mode</strong>.
           <br>• <em>Will NEVER trigger while riding in Drive or Sport!</em>
@@ -294,7 +294,7 @@ input:checked+.slider{background:linear-gradient(135deg,#f87171,#dc2626);box-sha
         <div style="background: rgba(0,0,0,0.4); border-radius: 8px; padding: 4px 6px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 6px;">
           <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; margin-bottom: 3px;">
             <span style="color: #94a3b8;">Gesture Countdown</span>
-            <span id="txtEcoCountdownVal" style="color: #fbbf24; font-family: monospace;">0.0s / 5.0s</span>
+            <span id="txtEcoCountdownVal" style="color: #fbbf24; font-family: monospace;">0.0s / 2.0s</span>
           </div>
           <div style="height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
             <div id="barEcoCountdown" style="height: 100%; width: 0%; background: linear-gradient(90deg, #f59e0b, #ef4444); border-radius: 4px; transition: width 0.1s linear;"></div>
@@ -302,8 +302,8 @@ input:checked+.slider{background:linear-gradient(135deg,#f87171,#dc2626);box-sha
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span id="txtEcoPrompt" style="font-size: 10px; color: var(--text-muted); font-style: italic;">Double-click to ECO & pin throttle for 5s to lock</span>
-          <button class="preset-pill" style="padding: 3px 8px; font-size: 10px; background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #fbbf24;" onclick="simulateEcoThrottleDemo()">⚡ Test 5s Demo</button>
+          <span id="txtEcoPrompt" style="font-size: 10px; color: var(--text-muted); font-style: italic;">Double-click to ECO & pin throttle for 2s to lock</span>
+          <button class="preset-pill" style="padding: 3px 8px; font-size: 10px; background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #fbbf24;" onclick="simulateEcoThrottleDemo()">⚡ Test 2s Demo</button>
         </div>
       </div>
 
@@ -824,6 +824,7 @@ async function handleConnectClick() {
     btnConnect.querySelector('#connectIcon').textContent = "🔌";
     startRideTimer();
     showToast("Scooter Connected! Ready.", "✅");
+    setTimeout(function () { try { askBackgroundPermission(); } catch (e) {} }, 600);
 
     setTimeout(() => {
       sendRawDirect(new Uint8Array([0xFA, 0xAF, 0xA5, 0x5A, 0x01, 0x00, 0x5B]), "Handshake #1");
@@ -857,6 +858,7 @@ async function sendRawDirect(bytes, label = "") {
 }
 
 function disconnectScooter() {
+  try { releaseWakeLock(); } catch (e) {}
   try {
     if (bluetoothDevice && bluetoothDevice.gatt && bluetoothDevice.gatt.connected) {
       bluetoothDevice.gatt.disconnect();
@@ -1033,17 +1035,17 @@ function checkEcoThrottleTicker() {
   if (stealthEnabled && isEco && isFullThrottle) {
     if (!ecoThrottleStartTime) {
       ecoThrottleStartTime = Date.now();
-      log("⚡ [Eco 5s Gesture] Full throttle detected in ECO mode. Timer started...", "log-warn");
+      log("⚡ [Eco 2s Gesture] Full throttle detected in ECO mode. Timer started...", "log-warn");
     }
     const elapsed = (Date.now() - ecoThrottleStartTime) / 1000.0;
-    const pct = Math.min(100, (elapsed / 5.0) * 100);
+    const pct = Math.min(100, (elapsed / 2.0) * 100);
     if (barEcoCountdown) barEcoCountdown.style.width = pct + "%";
-    if (txtEcoCountdownVal) txtEcoCountdownVal.textContent = Math.min(5.0, elapsed).toFixed(1) + "s / 5.0s";
+    if (txtEcoCountdownVal) txtEcoCountdownVal.textContent = Math.min(2.0, elapsed).toFixed(1) + "s / 2.0s";
     if (txtEcoPrompt) {
-      txtEcoPrompt.textContent = `🚨 HOLDING THROTTLE... ${(5.0 - elapsed).toFixed(1)}s remaining!`;
+      txtEcoPrompt.textContent = `🚨 HOLDING THROTTLE... ${(2.0 - elapsed).toFixed(1)}s remaining!`;
       txtEcoPrompt.style.color = "#f59e0b";
     }
-    if (elapsed >= 5.0) {
+    if (elapsed >= 2.0) {
       ecoThrottleStartTime = null;
       triggerEcoThrottlePanic();
     }
@@ -1051,9 +1053,9 @@ function checkEcoThrottleTicker() {
     if (ecoThrottleStartTime) {
       ecoThrottleStartTime = null;
       if (barEcoCountdown) barEcoCountdown.style.width = "0%";
-      if (txtEcoCountdownVal) txtEcoCountdownVal.textContent = "0.0s / 5.0s";
+      if (txtEcoCountdownVal) txtEcoCountdownVal.textContent = "0.0s / 2.0s";
       if (txtEcoPrompt) {
-        txtEcoPrompt.textContent = "Double-click to ECO & pin throttle for 5s to lock";
+        txtEcoPrompt.textContent = "Double-click to ECO & pin throttle for 2s to lock";
         txtEcoPrompt.style.color = "var(--text-muted)";
       }
     }
@@ -1077,16 +1079,16 @@ async function triggerEcoThrottlePanic() {
   if (navigator.vibrate) navigator.vibrate([350, 150, 350, 150, 600]);
 
   if (barEcoCountdown) barEcoCountdown.style.width = "100%";
-  if (txtEcoCountdownVal) txtEcoCountdownVal.textContent = "5.0s / 5.0s - TRIGGERED!";
+  if (txtEcoCountdownVal) txtEcoCountdownVal.textContent = "2.0s / 2.0s - TRIGGERED!";
   if (txtEcoPrompt) {
     txtEcoPrompt.textContent = "✅ TRIGGERED! Sport is now 20 km/h & gear switched to Sport!";
     txtEcoPrompt.style.color = "#34d399";
   }
   setTimeout(() => {
     if (barEcoCountdown) barEcoCountdown.style.width = "0%";
-    if (txtEcoCountdownVal) txtEcoCountdownVal.textContent = "0.0s / 5.0s";
+    if (txtEcoCountdownVal) txtEcoCountdownVal.textContent = "0.0s / 2.0s";
     if (txtEcoPrompt) {
-      txtEcoPrompt.textContent = "Double-click to ECO & pin throttle for 5s to lock";
+      txtEcoPrompt.textContent = "Double-click to ECO & pin throttle for 2s to lock";
       txtEcoPrompt.style.color = "var(--text-muted)";
     }
   }, 4000);
@@ -1116,14 +1118,14 @@ function simulateEcoThrottleDemo() {
   let start = Date.now();
   const demoTimer = setInterval(() => {
     const elapsed = (Date.now() - start) / 1000.0;
-    const pct = Math.min(100, (elapsed / 5.0) * 100);
+    const pct = Math.min(100, (elapsed / 2.0) * 100);
     if (barEcoCountdown) barEcoCountdown.style.width = pct + "%";
-    if (txtEcoCountdownVal) txtEcoCountdownVal.textContent = Math.min(5.0, elapsed).toFixed(1) + "s / 5.0s";
+    if (txtEcoCountdownVal) txtEcoCountdownVal.textContent = Math.min(2.0, elapsed).toFixed(1) + "s / 2.0s";
     if (txtEcoPrompt) {
-      txtEcoPrompt.textContent = `🚨 [DEMO] HOLDING THROTTLE... ${(5.0 - elapsed).toFixed(1)}s remaining!`;
+      txtEcoPrompt.textContent = `🚨 [DEMO] HOLDING THROTTLE... ${(2.0 - elapsed).toFixed(1)}s remaining!`;
       txtEcoPrompt.style.color = "#f59e0b";
     }
-    if (elapsed >= 5.0) {
+    if (elapsed >= 2.0) {
       clearInterval(demoTimer);
       isSimulatingEcoDemo = false;
       scooterState.throttle = 0;
@@ -1207,6 +1209,45 @@ function simulateDemoReply(code, data) {
 }
 </script>
 
+<script>
+/* Riley App: background permission (screen wake lock) */
+let rileyWakeLock = null;
+let rileyWakeConsent = false;
+async function askBackgroundPermission() {
+  rileyWakeConsent = window.confirm("Keep Riley App running while connected?\n\n" +
+    "Web apps can't run in the background \u2014 the Bluetooth link drops when the screen turns off, which kills limiter mode. " +
+    "With your permission, Riley App keeps the screen awake while connected, so the limiter keeps working.\n\n" +
+    "Allow?");
+  if (rileyWakeConsent) {
+    acquireWakeLock();
+  } else if (typeof log === 'function') {
+    log("Background/keep-awake permission declined. Screen may sleep and drop the connection.", "log-warn");
+  }
+}
+async function acquireWakeLock() {
+  try {
+    if ('wakeLock' in navigator && rileyWakeConsent && !rileyWakeLock) {
+      rileyWakeLock = await navigator.wakeLock.request('screen');
+      rileyWakeLock.addEventListener('release', function () { rileyWakeLock = null; });
+      if (typeof log === 'function') log("\u{1F512} Screen kept awake \u2014 limiter stays live while connected.", "log-ack");
+      if (typeof showToast === 'function') showToast("Screen will stay on while connected", "\u{1F512}");
+    } else if (!('wakeLock' in navigator)) {
+      if (typeof showToast === 'function') showToast("This browser can't keep the screen awake", "\u26A0\uFE0F");
+    }
+  } catch (e) {
+    if (typeof log === 'function') log("Keep-awake failed: " + e.message, "log-err");
+  }
+}
+function releaseWakeLock() {
+  try { if (rileyWakeLock) { rileyWakeLock.release(); rileyWakeLock = null; } } catch (e) {}
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible' && rileyWakeConsent && typeof isConnected !== 'undefined' && isConnected) {
+    acquireWakeLock();
+  }
+});
+</script>
+
 <style>
 #pwaInstallBar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:14px 16px;
 background:rgba(7,9,14,.92);backdrop-filter:blur(12px);border-top:1px solid rgba(255,255,255,.1);
@@ -1250,6 +1291,7 @@ background:linear-gradient(135deg,#fbbf24,#f59e0b);box-shadow:0 6px 20px rgba(24
   });
 })();
 </script>
+
 
 </body>
 </html>
